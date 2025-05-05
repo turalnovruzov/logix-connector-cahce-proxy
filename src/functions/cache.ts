@@ -16,7 +16,7 @@ async function getValue(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  const key = req.query.get("key");
+  const key = req.params.key;
 
   context.log(`Getting value for key: ${key}`);
 
@@ -46,7 +46,7 @@ async function putValue(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  const key = req.query.get("key");
+  const key = req.params.key;
   const value = await req.text();
 
   context.log(`Putting value for key: ${key} with value: ${value}`);
@@ -74,7 +74,7 @@ async function deleteValue(
   req: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
-  const key = req.query.get("key");
+  const key = req.params.key;
 
   context.log(`Deleting value for key: ${key}`);
 
