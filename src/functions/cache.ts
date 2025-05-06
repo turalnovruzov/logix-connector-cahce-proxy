@@ -151,6 +151,52 @@ async function deleteValue(
   }
 }
 
+/**
+ * Get all keys from the cache
+ * @param req - The HTTP request
+ * @param context - The invocation context
+ * @returns The HTTP response
+ */
+async function getAllKeys(
+  req: HttpRequest,
+  context: InvocationContext
+): Promise<HttpResponseInit> {
+  let client = null;
+
+  context.log(`Getting all cache keys`);
+
+  try {
+    const { cacheCollection, client: mongoClient } = await getCacheCollection();
+    client = mongoClient;
+
+    // Find all documents but only return the key field
+    const keys = await cacheCollection
+      .find({})
+      .project({ key: 1, _id: 0 })
+      .toArray();
+
+    return {
+      status: 200,
+      jsonBody: keys.map((doc) => doc.key),
+    };
+  } catch (error) {
+    context.error(`Error getting all keys: ${error.message}`);
+    return {
+      status: 500,
+      body: `Internal server error`,
+    };
+  } finally {
+    // Close the MongoDB connection
+    if (client) {
+      try {
+        await client.close();
+      } catch (err) {
+        context.error(`Error closing MongoDB connection: ${err.message}`);
+      }
+    }
+  }
+}
+
 // Register HTTP functions
 app.http("getValue", {
   methods: ["GET"],
@@ -171,4 +217,11 @@ app.http("deleteValue", {
   authLevel: "anonymous",
   route: "cache/{key}",
   handler: deleteValue,
+});
+
+app.http("getAllKeys", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  route: "cache/keys",
+  handler: getAllKeys,
 });
