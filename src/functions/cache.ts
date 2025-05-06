@@ -20,20 +20,28 @@ async function getValue(
 
   context.log(`Getting value for key: ${key}`);
 
-  const cacheCollection = await getCacheCollection();
-  const doc = await cacheCollection.findOne({ key });
+  try {
+    const cacheCollection = await getCacheCollection();
+    const doc = await cacheCollection.findOne({ key });
 
-  if (!doc) {
+    if (!doc) {
+      return {
+        status: 404,
+        body: "Key not found",
+      };
+    }
+
     return {
-      status: 404,
-      body: "Key not found",
+      status: 200,
+      body: doc.value,
+    };
+  } catch (error) {
+    context.error(`Error getting value for key ${key}: ${error.message}`);
+    return {
+      status: 500,
+      body: `Internal server error`,
     };
   }
-
-  return {
-    status: 200,
-    body: doc.value,
-  };
 }
 
 /**
@@ -51,17 +59,25 @@ async function putValue(
 
   context.log(`Putting value for key: ${key} with value: ${value}`);
 
-  const cacheCollection = await getCacheCollection();
-  await cacheCollection.updateOne(
-    { key },
-    { $set: { value } },
-    { upsert: true }
-  );
+  try {
+    const cacheCollection = await getCacheCollection();
+    await cacheCollection.updateOne(
+      { key },
+      { $set: { value } },
+      { upsert: true }
+    );
 
-  return {
-    status: 200,
-    body: "Value put successfully",
-  };
+    return {
+      status: 200,
+      body: "Value put successfully",
+    };
+  } catch (error) {
+    context.error(`Error putting value for key ${key}: ${error.message}`);
+    return {
+      status: 500,
+      body: `Internal server error`,
+    };
+  }
 }
 
 /**
@@ -78,20 +94,28 @@ async function deleteValue(
 
   context.log(`Deleting value for key: ${key}`);
 
-  const cacheCollection = await getCacheCollection();
-  const result = await cacheCollection.deleteOne({ key });
+  try {
+    const cacheCollection = await getCacheCollection();
+    const result = await cacheCollection.deleteOne({ key });
 
-  if (result.deletedCount === 0) {
+    if (result.deletedCount === 0) {
+      return {
+        status: 404,
+        body: "Key not found",
+      };
+    }
+
     return {
-      status: 404,
-      body: "Key not found",
+      status: 200,
+      body: "Value deleted successfully",
+    };
+  } catch (error) {
+    context.error(`Error deleting value for key ${key}: ${error.message}`);
+    return {
+      status: 500,
+      body: `Internal server error`,
     };
   }
-
-  return {
-    status: 200,
-    body: "Value deleted successfully",
-  };
 }
 
 // Register HTTP functions
