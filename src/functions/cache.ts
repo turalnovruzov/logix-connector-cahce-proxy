@@ -17,11 +17,13 @@ async function getValue(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const key = req.params.key;
+  let client = null;
 
   context.log(`Getting value for key: ${key}`);
 
   try {
-    const cacheCollection = await getCacheCollection();
+    const { cacheCollection, client: mongoClient } = await getCacheCollection();
+    client = mongoClient;
     const doc = await cacheCollection.findOne({ key });
 
     if (!doc) {
@@ -41,6 +43,15 @@ async function getValue(
       status: 500,
       body: `Internal server error`,
     };
+  } finally {
+    // Close the MongoDB connection
+    if (client) {
+      try {
+        await client.close();
+      } catch (err) {
+        context.error(`Error closing MongoDB connection: ${err.message}`);
+      }
+    }
   }
 }
 
@@ -56,11 +67,13 @@ async function putValue(
 ): Promise<HttpResponseInit> {
   const key = req.params.key;
   const value = await req.text();
+  let client = null;
 
   context.log(`Putting value for key: ${key} with value: ${value}`);
 
   try {
-    const cacheCollection = await getCacheCollection();
+    const { cacheCollection, client: mongoClient } = await getCacheCollection();
+    client = mongoClient;
     await cacheCollection.updateOne(
       { key },
       { $set: { value } },
@@ -77,6 +90,15 @@ async function putValue(
       status: 500,
       body: `Internal server error`,
     };
+  } finally {
+    // Close the MongoDB connection
+    if (client) {
+      try {
+        await client.close();
+      } catch (err) {
+        context.error(`Error closing MongoDB connection: ${err.message}`);
+      }
+    }
   }
 }
 
@@ -91,11 +113,13 @@ async function deleteValue(
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const key = req.params.key;
+  let client = null;
 
   context.log(`Deleting value for key: ${key}`);
 
   try {
-    const cacheCollection = await getCacheCollection();
+    const { cacheCollection, client: mongoClient } = await getCacheCollection();
+    client = mongoClient;
     const result = await cacheCollection.deleteOne({ key });
 
     if (result.deletedCount === 0) {
@@ -115,6 +139,15 @@ async function deleteValue(
       status: 500,
       body: `Internal server error`,
     };
+  } finally {
+    // Close the MongoDB connection
+    if (client) {
+      try {
+        await client.close();
+      } catch (err) {
+        context.error(`Error closing MongoDB connection: ${err.message}`);
+      }
+    }
   }
 }
 
